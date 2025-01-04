@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Is Moe a Millionaire? 💰</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #000;
+            color: white;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-text {
+            font-size: 2rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #FF416C, #FF4B2B);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .millionaire-gradient-text {
+            background: linear-gradient(135deg, #00F260, #0575E6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .number-animation {
+            transition: all 0.3s ease-out;
+        }
+
+        .number-animation.up {
+            animation: numberUp 0.5s ease-out;
+        }
+
+        .number-animation.down {
+            animation: numberDown 0.5s ease-out;
+        }
+
+        @keyframes numberUp {
+            0% { transform: scale(1); filter: hue-rotate(0deg); }
+            50% { transform: scale(1.2); filter: hue-rotate(90deg); }
+            100% { transform: scale(1); filter: hue-rotate(0deg); }
+        }
+
+        @keyframes numberDown {
+            0% { transform: scale(1); filter: hue-rotate(0deg); }
+            50% { transform: scale(1.2); filter: hue-rotate(-90deg); }
+            100% { transform: scale(1); filter: hue-rotate(0deg); }
+        }
+
+        .progress-container {
+            position: relative;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #FF416C, #FF4B2B);
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .millionaire-progress-bar {
+            background: linear-gradient(90deg, #00F260, #0575E6);
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: white;
+            border-radius: 50%;
+            animation: particle-animation 2s infinite;
+        }
+
+        @keyframes particle-animation {
+            0% {
+                transform: translate(0, 0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty));
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    {% raw %}
+    <script type="text/babel">
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
+        };
+
+        const LoadingScreen = ({ onComplete, currentValue }) => {
+            React.useEffect(() => {
+                let progress = 0;
+                const interval = setInterval(() => {
+                    if (currentValue > 1) {
+                        progress += 2;
+                        const count = document.querySelector('.loading-count');
+                        if (count) count.textContent = Math.min(progress, 100);
+                        
+                        if (progress >= 100) {
+                            clearInterval(interval);
+                            setTimeout(onComplete, 300);
+                        }
+                    }
+                }, 10);
+
+                return () => clearInterval(interval);
+            }, [onComplete, currentValue]);
+
+            return (
+                <div className="loading-overlay">
+                    <div className="text-center">
+                        <div className="loading-text mb-4">Loading Portfolio</div>
+                        <div className="loading-count text-6xl font-bold">0</div>
+                        <div className="mt-2 text-gray-400">%</div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Particles = ({ count = 30 }) => {
+            const particles = React.useMemo(() => {
+                return Array.from({ length: count }).map((_, i) => ({
+                    id: i,
+                    tx: (Math.random() - 0.5) * 200,
+                    ty: (Math.random() - 0.5) * 200,
+                    delay: Math.random() * 2
+                }));
+            }, [count]);
+
+            return (
+                <div className="particles">
+                    {particles.map(particle => (
+                        <div
+                            key={particle.id}
+                            className="particle"
+                            style={{
+                                '--tx': `${particle.tx}px`,
+                                '--ty': `${particle.ty}px`,
+                                left: `${Math.random() * 100}%`,
+                                top: `${Math.random() * 100}%`,
+                                animationDelay: `${particle.delay}s`
+                            }}
+                        />
+                    ))}
+                </div>
+            );
+        };
+
+        const PortfolioDisplay = () => {
+            const [value, setValue] = React.useState(0);
+            const [previousValue, setPreviousValue] = React.useState(0);
+            const [isMillionaire, setIsMillionaire] = React.useState(false);
+            const [valueChange, setValueChange] = React.useState(null);
+            const [isLoading, setIsLoading] = React.useState(true);
+            const GOAL = 1000000;
+
+            React.useEffect(() => {
+                const fetchData = async () => {
+                    try {
+                        const response = await fetch('/api/portfolio-value');
+                        const data = await response.json();
+                        
+                        setPreviousValue(value);
+                        setValue(data.value);
+                        setIsMillionaire(data.value >= GOAL);
+                        setValueChange(data.value > value ? 'up' : data.value < value ? 'down' : null);
+                        
+                        setTimeout(() => setValueChange(null), 500);
+                    } catch (error) {
+                        console.error('Error:', error);
+                    }
+                };
+
+                // Initial fetch
+                fetchData();
+                
+                // Set up polling if not loading
+                if (!isLoading) {
+                    const interval = setInterval(fetchData, 5000);
+                    return () => clearInterval(interval);
+                }
+            }, [value, isLoading]);
+
+            const progressPercent = Math.min((value / GOAL) * 100, 100);
+
+            return (
+                <>
+                    {isLoading && <LoadingScreen onComplete={() => setIsLoading(false)} currentValue={value} />}
+                    <div className={`min-h-screen py-20 px-4 transition-all duration-1000 ${
+                        isMillionaire ? 'bg-gradient-to-br from-green-900 via-green-800 to-black' : 
+                        'bg-gradient-to-br from-red-900 via-red-800 to-black'
+                    }`}>
+                        <Particles count={30} />
+                        
+                        <div className="max-w-4xl mx-auto relative">
+                            <h1 className={`text-8xl font-bold text-center mb-12 ${
+                                isMillionaire ? 'millionaire-gradient-text' : 'gradient-text'
+                            }`}>
+                                Is Moe a Millionaire?
+                            </h1>
+                            
+                            <div className="card p-10 mb-12">
+                                <div className={`text-9xl font-bold text-center mb-8 number-animation ${
+                                    valueChange === 'up' ? 'up' : valueChange === 'down' ? 'down' : ''
+                                }`}>
+                                    {formatCurrency(value)}
+                                </div>
+                                
+                                <div className="progress-container mb-6">
+                                    <div 
+                                        className={`progress-bar ${isMillionaire ? 'millionaire-progress-bar' : ''}`}
+                                        style={{ width: `${progressPercent}%` }}
+                                    />
+                                </div>
+                                
+                                <div className="text-3xl text-center font-semibold">
+                                    {isMillionaire ? (
+                                        <span className="millionaire-gradient-text">
+                                            🎉 MOE IS A MILLIONAIRE! 🎉
+                                        </span>
+                                    ) : (
+                                        <span className="gradient-text">
+                                            {formatCurrency(GOAL - value)} to go!
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {[
+                                    "2AiLzs7bhm2kJkx4hw62kNykTcqHuWhFWwbumLMaHJPv",
+                                    "GvhEuFmQYnxtXnyT1dwkLabgWhMGbgimJXvGdHSuMdNU"
+                                ].map((address, index) => (
+                                    <div key={address} className="card p-8">
+                                        <h2 className="text-2xl font-bold mb-4">Wallet {index + 1}</h2>
+                                        <p className="text-gray-400 break-all text-sm">{address}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </>
+            );
+        };
+
+        ReactDOM.render(<PortfolioDisplay />, document.getElementById('root'));
+    </script>
+    {% endraw %}
+</body>
+</html>
