@@ -3,7 +3,9 @@ services:
     name: moe-millionaire
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn src.app:app
+    startCommand: gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.12
+      - key: PORT
+        value: 10000
